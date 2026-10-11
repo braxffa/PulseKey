@@ -4,9 +4,9 @@ PulseKey's free signing route uses a Microsoft Store MSIX. Microsoft signs an ap
 
 ## Current status
 
-- The repository has a manual MSIX build script and matching visual assets.
-- A test package has been built with a temporary identity to validate the package structure. **It is not a Store submission or a signed release.**
-- The actual package needs the exact app identity from the owner's Microsoft Store Partner Center account. Store approval and signing happen only after submission and certification.
+- The name **PulseKey** is reserved for @BraxFFA in Partner Center (Store product ID `9NTRWC5CM8C5`).
+- The submission draft is set to **$0.99 USD**. A paid Store listing requires the account holder to complete tax and payout information in Partner Center.
+- An unsigned submission MSIX has been built with the real Store identity. Store approval and signing happen only after submission and certification.
 
 ## Prepare the Store identity
 
@@ -30,7 +30,7 @@ When changing the app version, update the assembly and file versions in `src/Pul
 
 ## Submit and publish
 
-1. In Partner Center, create a free app submission and choose the app's availability and Store category.
+1. In Partner Center, complete the submission draft with $0.99 USD pricing, availability, and the Utilities + tools category. Complete the tax and payout account setup required for a paid listing.
 2. Upload the MSIX from `dist`. Use the existing screenshots under `docs/images` for the listing. Describe PulseKey as an input studio and accurately disclose that it uses Windows `SendInput`; do not promise compatibility with protected games.
 3. Run the Windows App Certification Kit and address any reported problems. Submit for Microsoft's certification.
 4. After the Store listing is live, install it from the Store and verify the app starts, saves settings, opens the @BraxFFA credit, and performs an allowed test input. Then add the live Store listing link to the GitHub README and release notes.
