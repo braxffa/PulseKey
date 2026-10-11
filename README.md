@@ -65,6 +65,7 @@ PulseKey uses Windows `SendInput`. Where Windows provides a scan code for a sele
 - [Themes](docs/THEMES.md)
 - [Build from source](docs/BUILD.md)
 - [Microsoft Store release workflow](docs/STORE.md)
+- [Privacy policy](PRIVACY.md)
 - [Troubleshooting](docs/TROUBLESHOOTING.md)
 - [Security and reporting](SECURITY.md)
 - [Changelog](CHANGELOG.md)
