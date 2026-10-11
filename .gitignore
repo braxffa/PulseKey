@@ -1,0 +1,7 @@
+dist/
+*.pdb
+*.user
+*.suo
+.vs/
+.DS_Store
+Thumbs.db
