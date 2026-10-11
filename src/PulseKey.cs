@@ -19,8 +19,8 @@ using System.Xml.Serialization;
 [assembly: System.Reflection.AssemblyProduct("PulseKey")]
 [assembly: System.Reflection.AssemblyCompany("@BraxFFA")]
 [assembly: System.Reflection.AssemblyCopyright("Copyright (c) 2026 @BraxFFA")]
-[assembly: System.Reflection.AssemblyVersion("1.0.1.0")]
-[assembly: System.Reflection.AssemblyFileVersion("1.0.1.0")]
+[assembly: System.Reflection.AssemblyVersion("1.0.2.0")]
+[assembly: System.Reflection.AssemblyFileVersion("1.0.2.0")]
 
 namespace PulseKey {
     [Serializable]
@@ -302,6 +302,15 @@ namespace PulseKey {
     }
 
     internal sealed class AppForm : Form {
+        private sealed class UiMetrics {
+            public Rectangle Bounds;
+            public Padding Padding;
+            public float FontSize;
+            public FontStyle FontStyle;
+            public string FontFamily;
+            public Font ScaledFont;
+            public int Radius;
+        }
         private static readonly ThemeSpec[] Themes={
             new ThemeSpec("Blue Eclipse","Midnight blue fades smoothly into black with lavender and icy-blue accents.","#152D51","#04060B","#15233B","#20324E","#A8B9FF","#DFE6FA","#A6B5CE","#334866","#79D5FF"),
             new ThemeSpec("Obsidian","Graphite and black with steel-blue and mist-violet accents.","#232B38","#05070A","#1D2633","#2A3748","#A7BCE0","#E2EAF5","#A7B6C9","#405167","#D9B7FF"),
@@ -325,6 +334,8 @@ namespace PulseKey {
         private readonly RoundedPanel header = new RoundedPanel{Radius=0,PaintCanvas=true};
         private RoundedPanel hero;
         private Label status = new Label();
+        private Label madeBy;
+        private LinkLabel author;
         private RoundedButton startButton = new RoundedButton();
         private RoundedButton fullscreenButton = new RoundedButton();
         private RoundedSelect targetBox, mouseBox;
@@ -350,10 +361,15 @@ namespace PulseKey {
         private Size previousMinimumSize;
         private FormWindowState previousWindowState;
         private FormBorderStyle previousBorderStyle;
+        private readonly Dictionary<Control,UiMetrics> uiMetrics=new Dictionary<Control,UiMetrics>();
+        private Size baseClientSize;
+        private float uiScale=1f;
+        private bool scaleQueued,buildingPage;
 
         public AppForm() {
             LoadSettings(); ApplyColors();
             Text = "PulseKey"; Size = new Size(1100,810); MinimumSize = new Size(1100,780);
+            baseClientSize=ClientSize;
             StartPosition = FormStartPosition.CenterScreen; Font = new Font("Segoe UI",10);
             AutoScaleMode = AutoScaleMode.Dpi; Icon = MakeIcon();
             root.Dock = DockStyle.Fill; root.BackColor = bg; Controls.Add(root);
@@ -365,6 +381,8 @@ namespace PulseKey {
             actionTimer.Tick += ActionTick;
             header.Resize += (s,e)=>LayoutHeader();
             content.Resize += (s,e)=>LayoutWorkspace();
+            sidebar.Resize += (s,e)=>LayoutSidebarFooter();
+            Resize += (s,e)=>QueueUiScale();
             Shown += (s,e) => { TintTitleBar();
                 bool startHotkey=Native.RegisterHotKey(Handle,1,0,(uint)Keys.F8), stopHotkey=Native.RegisterHotKey(Handle,2,0,(uint)Keys.F9);
                 RefreshTargets(); if(!startHotkey||!stopHotkey)MessageBox.Show(this,"F8 or F9 is already in use. Close the conflicting app and restart PulseKey. The on-screen buttons still work.","Hotkey unavailable",MessageBoxButtons.OK,MessageBoxIcon.Warning); };
@@ -400,25 +418,81 @@ namespace PulseKey {
             b.Click+=click; return b;
         }
         private void ClearControls(Control parent) {
-            while(parent.Controls.Count>0) { Control child=parent.Controls[0];parent.Controls.RemoveAt(0);child.Dispose(); }
+            while(parent.Controls.Count>0) { Control child=parent.Controls[0];UnregisterUiTree(child);parent.Controls.RemoveAt(0);child.Dispose(); }
+        }
+        private int Ui(int pixels){return (int)Math.Round(pixels*uiScale);}
+        private static int Scaled(int pixels,float scale){return (int)Math.Round(pixels*scale);}
+        private static Padding Scaled(Padding value,float scale){return new Padding(Scaled(value.Left,scale),Scaled(value.Top,scale),Scaled(value.Right,scale),Scaled(value.Bottom,scale));}
+        private void RegisterUiTree(Control parent){
+            foreach(Control child in parent.Controls){
+                if(!uiMetrics.ContainsKey(child))uiMetrics.Add(child,new UiMetrics{
+                    Bounds=child.Bounds,Padding=child.Padding,FontSize=child.Font.SizeInPoints,
+                    FontStyle=child.Font.Style,FontFamily=child.Font.FontFamily.Name,
+                    Radius=child is RoundedPanel?((RoundedPanel)child).Radius:child is RoundedButton?((RoundedButton)child).Radius:0
+                });
+                RegisterUiTree(child);
+            }
+        }
+        private void UnregisterUiTree(Control control){
+            foreach(Control child in control.Controls)UnregisterUiTree(child);
+            UiMetrics metrics;
+            if(uiMetrics.TryGetValue(control,out metrics)){
+                if(metrics.ScaledFont!=null)metrics.ScaledFont.Dispose();
+                uiMetrics.Remove(control);
+            }
+        }
+        private void ScaleUiTree(Control parent){
+            foreach(Control child in parent.Controls){
+                UiMetrics metrics;
+                if(!uiMetrics.TryGetValue(child,out metrics))continue;
+                if(child is Label||child is TextBox||child is RoundedButton||child is RoundedSelect){
+                    Font previous=metrics.ScaledFont;
+                    metrics.ScaledFont=new Font(metrics.FontFamily,metrics.FontSize*uiScale,metrics.FontStyle);
+                    child.Font=metrics.ScaledFont;
+                    if(previous!=null)previous.Dispose();
+                }
+                child.Padding=Scaled(metrics.Padding,uiScale);
+                if(child is RoundedPanel)((RoundedPanel)child).Radius=Ui(metrics.Radius);
+                else if(child is RoundedButton)((RoundedButton)child).Radius=Ui(metrics.Radius);
+                Rectangle b=metrics.Bounds;
+                if(parent==content&&child.Tag is Point)child.Height=Ui(b.Height);
+                else child.SetBounds(Ui(b.Left),Ui(b.Top),Ui(b.Width),Ui(b.Height));
+                ScaleUiTree(child);
+            }
+        }
+        private void QueueUiScale(){
+            if(!IsHandleCreated||scaleQueued)return;
+            scaleQueued=true;
+            BeginInvoke((Action)(()=>{scaleQueued=false;if(!IsDisposed)UpdateUiScale();}));
+        }
+        private void UpdateUiScale(){
+            if(baseClientSize.Width<1||baseClientSize.Height<1)return;
+            float minimum=fullscreen?.55f:1f;
+            float next=Math.Max(minimum,Math.Min(1.9f,Math.Min((float)ClientSize.Width/Math.Max(baseClientSize.Width,1116),(float)ClientSize.Height/baseClientSize.Height)));
+            next=(float)Math.Round(next*20f)/20f;
+            if(Math.Abs(next-uiScale)<.01f){LayoutHeader();LayoutSidebarFooter();LayoutWorkspace();return;}
+            uiScale=next;
+            sidebar.Width=Ui(220);header.Height=Ui(68);
+            ScaleUiTree(sidebar);ScaleUiTree(header);ScaleUiTree(content);
+            LayoutHeader();LayoutSidebarFooter();LayoutWorkspace();
         }
         private void AddShadow(Control parent,int left,int top,int width,int height) {
             CardShadow shadow=new CardShadow { Width=width+5,Height=height+6,Anchor=AnchorStyles.Top|AnchorStyles.Left };
             parent.Controls.Add(shadow);
             PlaceWorkspace(shadow,left+2,top+4);
         }
-        private int WorkspaceWidth(){return Math.Max(500,Math.Min(840,content.ClientSize.Width-56));}
+        private int WorkspaceWidth(){return Math.Max(Ui(500),Math.Min(Ui(840),content.ClientSize.Width-Ui(56)));}
         private int WorkspaceLeft(){return Math.Max(0,(content.ClientSize.Width-WorkspaceWidth())/2);}
-        private int WorkspaceTop(){return Math.Max(0,(content.ClientSize.Height-700)/2);}
-        private void PlaceWorkspace(Control control,int x,int y){control.Tag=new Point(x,y);control.Left=WorkspaceLeft()+x;control.Top=WorkspaceTop()+y;}
+        private int WorkspaceTop(){return Math.Max(0,(content.ClientSize.Height-Ui(700))/2);}
+        private void PlaceWorkspace(Control control,int x,int y){control.Tag=new Point(x,y);control.Left=WorkspaceLeft()+Ui(x);control.Top=WorkspaceTop()+Ui(y);}
         private void LayoutWorkspace(){
             int width=WorkspaceWidth();
             foreach(Control control in content.Controls){
                 if(!(control.Tag is Point))continue;
                 Point position=(Point)control.Tag;
-                control.Left=WorkspaceLeft()+position.X;
-                control.Top=WorkspaceTop()+position.Y;
-                if(control is CardShadow)control.Width=width+5;
+                control.Left=WorkspaceLeft()+Ui(position.X);
+                control.Top=WorkspaceTop()+Ui(position.Y);
+                if(control is CardShadow)control.Width=width+Ui(5);
                 else if(control is RoundedPanel)control.Width=width;
             }
             content.Invalidate();
@@ -447,23 +521,29 @@ namespace PulseKey {
             Label sub=Label("DESKTOP INPUT STUDIO",8,true); sub.ForeColor=muted; Put(sidebar,sub,27,61);
             string[] pages={"Quick action","Macro studio","Appearance"};
             for(int i=0;i<pages.Length;i++) { string name=pages[i]; RoundedButton b=Button(name,(s,e)=>{page=name;BuildShell();BuildPage();}); b.TextAlign=ContentAlignment.MiddleLeft; b.Width=188; b.Height=46; b.Left=16; b.Top=138+i*56; b.Padding=new Padding(10,0,0,0); b.BackColor=page==name?Shape.Blend(surface2,accent,.22f):surface2; b.FillEnd=page==name?Shape.Blend(surface2,accentAlt,.30f):Color.Transparent; b.ForeColor=page==name?accent:muted;b.Outline=page==name?secondaryLine:Color.Transparent;b.TransparentFill=page!=name; sidebar.Controls.Add(b); }
-            int footerTop=sidebar.Height-52;
-            Label madeBy=Label("Made by",8);madeBy.ForeColor=muted;Put(sidebar,madeBy,27,footerTop);madeBy.Anchor=AnchorStyles.Bottom|AnchorStyles.Left;
-            LinkLabel author=new LinkLabel{Text="@BraxFFA",AutoSize=true,BackColor=Color.Transparent,Font=new Font("Segoe UI",8,FontStyle.Bold),LinkColor=accentAlt,ActiveLinkColor=accent,VisitedLinkColor=accentAlt,LinkBehavior=LinkBehavior.HoverUnderline,TabStop=true};
+            madeBy=Label("Made by",8);madeBy.ForeColor=muted;Put(sidebar,madeBy,27,0);madeBy.Anchor=AnchorStyles.Bottom|AnchorStyles.Left;
+            author=new LinkLabel{Text="@BraxFFA",AutoSize=true,BackColor=Color.Transparent,Font=new Font("Segoe UI",8,FontStyle.Bold),LinkColor=accentAlt,ActiveLinkColor=accent,VisitedLinkColor=accentAlt,LinkBehavior=LinkBehavior.HoverUnderline,TabStop=true};
             author.LinkArea=new LinkArea(0,author.Text.Length);
             author.LinkClicked+=(s,e)=>{try{Process.Start(new ProcessStartInfo("https://linktr.ee/BraxFFA"){UseShellExecute=true});}catch{MessageBox.Show(this,"Could not open the link in your default browser.","Open link",MessageBoxButtons.OK,MessageBoxIcon.Information);}};
-            Put(sidebar,author,80,footerTop);author.Anchor=AnchorStyles.Bottom|AnchorStyles.Left;
+            Put(sidebar,author,80,0);author.Anchor=AnchorStyles.Bottom|AnchorStyles.Left;
             status=Label("●  Idle",9,true); status.ForeColor=muted; status.AutoSize=false; status.TextAlign=ContentAlignment.MiddleRight; status.Width=145; status.Height=40; status.Top=13; status.Anchor=AnchorStyles.Top|AnchorStyles.Right; header.Controls.Add(status);
             startButton=Button("Start  F8",(s,e)=>Toggle(),true); startButton.Width=120; startButton.Top=14; startButton.Anchor=AnchorStyles.Top|AnchorStyles.Right; header.Controls.Add(startButton);
             fullscreenButton=Button(fullscreen?"Exit full screen  F11":"Full screen  F11",(s,e)=>ToggleFullscreen()); fullscreenButton.Width=145;fullscreenButton.Top=14;fullscreenButton.Anchor=AnchorStyles.Top|AnchorStyles.Right;header.Controls.Add(fullscreenButton);
-            LayoutHeader();
+            RegisterUiTree(sidebar);RegisterUiTree(header);
+            ScaleUiTree(sidebar);ScaleUiTree(header);
+            LayoutHeader();LayoutSidebarFooter();
             UpdateStatus();
         }
         private void LayoutHeader(){
             if(startButton==null||startButton.IsDisposed||fullscreenButton==null||fullscreenButton.IsDisposed||status==null||status.IsDisposed)return;
-            startButton.Left=header.ClientSize.Width-148;
-            fullscreenButton.Left=startButton.Left-157;
-            status.Left=fullscreenButton.Left-157;
+            startButton.Left=header.ClientSize.Width-Ui(28)-startButton.Width;
+            fullscreenButton.Left=startButton.Left-Ui(12)-fullscreenButton.Width;
+            status.Left=fullscreenButton.Left-Ui(12)-status.Width;
+        }
+        private void LayoutSidebarFooter(){
+            if(madeBy==null||author==null||madeBy.IsDisposed||author.IsDisposed)return;
+            madeBy.Top=sidebar.ClientSize.Height-Ui(52);
+            author.Top=madeBy.Top;
         }
         private void ToggleFullscreen(){
             if(!fullscreen){
@@ -476,7 +556,7 @@ namespace PulseKey {
                 MinimumSize=previousMinimumSize;Bounds=previousBounds;WindowState=previousWindowState;fullscreen=false;
             }
             if(fullscreenButton!=null&&!fullscreenButton.IsDisposed)fullscreenButton.Text=fullscreen?"Exit full screen  F11":"Full screen  F11";
-            LayoutWorkspace();
+            UpdateUiScale();
         }
         protected override bool ProcessCmdKey(ref Message msg,Keys keyData){
             if(keyData==Keys.F11){ToggleFullscreen();return true;}
@@ -484,7 +564,10 @@ namespace PulseKey {
         }
         private void BuildPage() {
             ClearControls(content);
+            buildingPage=true;
             if(page=="Quick action") BuildQuick(); else if(page=="Macro studio") BuildMacro(); else BuildAppearance();
+            buildingPage=false;
+            RegisterUiTree(content);ScaleUiTree(content);LayoutWorkspace();
         }
         private void BuildQuick() {
             hero=Hero(0,108);
@@ -576,6 +659,7 @@ namespace PulseKey {
             if(macro.Steps.Count==0){
                 Label emptyTitle=Label("Your timeline is empty",15,true);emptyTitle.ForeColor=textColor;Put(stepsHost,emptyTitle,22,68);
                 Label emptyBody=Label("Start with Press a key, Click mouse, or Wait.\nSteps appear here in playback order.",10);emptyBody.ForeColor=muted;Put(stepsHost,emptyBody,23,105);
+                if(!buildingPage){RegisterUiTree(stepsHost);ScaleUiTree(stepsHost);}
                 return;
             }
             for(int i=0;i<macro.Steps.Count;i++){
@@ -590,6 +674,7 @@ namespace PulseKey {
                 RoundedButton down=Button("Down",(s,e)=>MoveStep(index,1));Put(row,down,335,15,55);down.Height=32;
                 RoundedButton remove=Button("Remove",(s,e)=>RemoveStep(index));Put(row,remove,394,15,72);remove.Height=32;
             }
+            if(!buildingPage){RegisterUiTree(stepsHost);ScaleUiTree(stepsHost);}
         }
         private void AddKeyStep() { Keys? k=CaptureKey();if(k.HasValue){macro.Steps.Add(new MacroStep{Kind="Key",Value=k.Value.ToString(),DelayMs=100});RefreshSteps();} }
         private void AddMouseStep() {

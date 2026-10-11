@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.0.2 — 2026-10-10
+
+- Made the whole interface scale with a maximized or full-screen window: working cards, buttons, fields, macro timeline, theme tiles, text, sidebar, and header.
+- Restored the original control sizes when leaving full screen or returning to the normal window size.
+- Kept the scaled workspace centered and reduced needless redraws by updating the scale in small increments during resizing.
+- Added full-screen screenshots for the theme picker and a Shift macro step.
+
 ## v1.0.1 — 2026-10-10
 
 - Added F11 and a visible button for true borderless full screen, with restoration of the prior window state.

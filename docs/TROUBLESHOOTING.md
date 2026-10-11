@@ -18,7 +18,7 @@ Another program may already have registered the key. PulseKey warns at startup i
 
 ## Full screen looks wrong or the title bar is missing
 
-Use `F11` or **Exit full screen** to return to the prior window state. The native maximize button keeps the title bar; `F11` fills the whole display and intentionally hides it. The working cards remain centered at large window sizes.
+Use `F11` or **Exit full screen** to return to the prior window state. The native maximize button keeps the title bar; `F11` fills the whole display and intentionally hides it. Version 1.0.2 also enlarges the cards, controls, and text to match the display. If only the background grows, install the latest release.
 
 ## Shift does not appear in a macro
 

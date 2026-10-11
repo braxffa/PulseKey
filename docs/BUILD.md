@@ -18,7 +18,7 @@ The script writes `dist\PulseKey.exe`. It locates the 64-bit .NET Framework comp
 & "$env:WINDIR\Microsoft.NET\Framework64\v4.0.30319\csc.exe" /nologo /target:winexe /platform:x64 /win32icon:assets\PulseKey.ico /r:System.Windows.Forms.dll /r:System.Drawing.dll /r:System.Xml.dll /out:dist\PulseKey.exe src\PulseKey.cs
 ```
 
-The assembly version is `1.0.1.0`; the package/release tag is `v1.0.1`. The executable is not code signed. Build on a trusted Windows machine and compare release checksums with the attached `SHA256SUMS-v1.0.1.txt` if you download a prebuilt package.
+The assembly version is `1.0.2.0`; the package/release tag is `v1.0.2`. The executable is not code signed. Build on a trusted Windows machine and compare release checksums with the attached `SHA256SUMS-v1.0.2.txt` if you download a prebuilt package.
 
 ## Manual smoke test
 
@@ -27,6 +27,6 @@ The assembly version is `1.0.1.0`; the package/release tag is `v1.0.1`. The exec
 3. Select an ordinary test app window, use a harmless key or mouse input, and verify **Idle → Armed → Active**. Confirm `F9` releases it.
 4. Build, save, reload, edit, and run a small macro against a test app.
 5. Switch themes, close and reopen PulseKey, and verify the choice persists.
-6. Maximize the app and toggle `F11`; verify the cards stay centered and the previous window size returns. Capture Shift in Macro studio and confirm the timeline displays **Press Shift**.
+6. Maximize the app and toggle `F11`; verify the cards, controls, text, sidebar, and header grow, then return to normal size on exit. Capture Shift in Macro studio and confirm the scaled timeline displays **Press Shift**.
 
 Input behavior depends on the receiving application and cannot be proven from compilation alone. Do not use a protected game as a smoke-test target.

@@ -10,7 +10,7 @@
 
 The action pauses if another window comes to the front. In Hold mode, PulseKey releases the held input on focus loss. If the chosen window closes, the action stops. Reopen or refresh the target list before starting again.
 
-Use the native maximize button to enlarge the app while keeping its title bar, or use **Full screen** / `F11` for a borderless full-display view. Press `F11` again or use **Exit full screen** to restore the previous window size. The cards stay centered at large sizes.
+Use the native maximize button to enlarge the app while keeping its title bar, or use **Full screen** / `F11` for a borderless full-display view. Press `F11` again or use **Exit full screen** to restore the previous window size. The cards, controls, text, sidebar, and header grow with the window and return to their original size when restored.
 
 ## Macro studio
 

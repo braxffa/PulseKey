@@ -10,7 +10,7 @@ PulseKey is a portable 64-bit Windows app built with Windows Forms and the .NET 
 
 ## Download
 
-Get `PulseKey-v1.0.1-win-x64.zip` from [Releases](../../releases). Extract it to a folder, then run `PulseKey.exe`. A standalone executable and `SHA256SUMS-v1.0.1.txt` are also attached to the release.
+Get `PulseKey-v1.0.2-win-x64.zip` from [Releases](../../releases). Extract it to a folder, then run `PulseKey.exe`. A standalone executable and `SHA256SUMS-v1.0.2.txt` are also attached to the release.
 
 > Windows may display a SmartScreen prompt for an unsigned app. Review the source and the release checksum before choosing whether to run it. The release is not code signed.
 
@@ -27,7 +27,7 @@ Get `PulseKey-v1.0.1-win-x64.zip` from [Releases](../../releases). Extract it to
 - **States:** **Idle** means stopped, **Armed** means waiting for the selected window, and **Active** means output is running while that window is in front.
 - **Target scope:** PulseKey enumerates ordinary visible top-level windows. It pauses output when the target loses focus and stops if that window closes.
 - **Portable:** One executable, an icon, and a local settings file. No telemetry or automatic network requests.
-- **Large-window layout:** Maximizing or entering full screen centers the working cards and keeps the entire window themed.
+- **Large-window layout:** Maximizing or entering full screen grows the cards, controls, text, sidebar, and header to fit the display while keeping the working area centered.
 
 ## Quick start
 
@@ -41,11 +41,11 @@ For macros, open **Macro studio**, add steps to the timeline, and use **Run once
 
 ## Screenshots
 
-| Macro studio in full screen | Theme picker |
+| Macro studio in full screen | Theme picker in full screen |
 | --- | --- |
-| ![Macro studio in full screen](docs/images/fullscreen-macro.png) | ![Appearance](docs/images/appearance.png) |
+| ![Macro studio in full screen](docs/images/fullscreen-macro.png) | ![Appearance in full screen](docs/images/fullscreen-appearance.png) |
 
-[See all 15 themes](docs/images/all-themes.png) · [Neon Orchid](docs/images/neon-orchid.png) · [Blackout](docs/images/blackout.png)
+[Shift macro step in full screen](docs/images/fullscreen-shift-step.png) · [See all 15 themes](docs/images/all-themes.png) · [Neon Orchid](docs/images/neon-orchid.png) · [Blackout](docs/images/blackout.png)
 
 ## Input and game compatibility
 
