@@ -6,7 +6,6 @@ This copy is ready to enter in Partner Center after the app name is reserved. Ke
 
 - **Name:** PulseKey
 - **Publisher credit:** Made by @BraxFFA
-- **Price:** $0.99 USD
 - **Suggested category:** Utilities & tools
 - **Privacy policy:** `https://github.com/braxffa/PulseKey/blob/main/PRIVACY.md`
 - **Support and source:** `https://github.com/braxffa/PulseKey`
