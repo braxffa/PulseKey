@@ -16,6 +16,14 @@ PulseKey sends synthetic Windows input through `SendInput`. Some apps reject syn
 
 Another program may already have registered the key. PulseKey warns at startup if registration fails. Use the on-screen controls or close the conflicting app and restart PulseKey.
 
+## Full screen looks wrong or the title bar is missing
+
+Use `F11` or **Exit full screen** to return to the prior window state. The native maximize button keeps the title bar; `F11` fills the whole display and intentionally hides it. The working cards remain centered at large window sizes.
+
+## Shift does not appear in a macro
+
+Choose **Press a key**, then press Shift by itself in the capture dialog. The timeline displays **Press Shift**. A macro key step sends a press and release; use Quick action's **Hold** mode if you need a sustained Shift input.
+
 ## A held input seems stuck
 
 Press `F9`, click **Stop**, or close PulseKey. The app sends a release when stopped, when focus leaves the target, and during normal shutdown. If the target or Windows has stopped responding, reconnecting the input device or ending the target app may be necessary.

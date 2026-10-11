@@ -19,8 +19,8 @@ using System.Xml.Serialization;
 [assembly: System.Reflection.AssemblyProduct("PulseKey")]
 [assembly: System.Reflection.AssemblyCompany("@BraxFFA")]
 [assembly: System.Reflection.AssemblyCopyright("Copyright (c) 2026 @BraxFFA")]
-[assembly: System.Reflection.AssemblyVersion("1.0.0.0")]
-[assembly: System.Reflection.AssemblyFileVersion("1.0.0.0")]
+[assembly: System.Reflection.AssemblyVersion("1.0.1.0")]
+[assembly: System.Reflection.AssemblyFileVersion("1.0.1.0")]
 
 namespace PulseKey {
     [Serializable]
@@ -108,7 +108,7 @@ namespace PulseKey {
     internal static class ThemeCanvas {
         public static Color Top=Color.FromArgb(19,40,74), Bottom=Color.FromArgb(4,6,11);
         private static Bitmap canvas;
-        private static int canvasWidth,canvasHeight;
+        private static int canvasHeight;
         private static Color canvasTop,canvasBottom;
         private static readonly byte[] Dither={
             0,48,12,60,3,51,15,63, 32,16,44,28,35,19,47,31,
@@ -117,9 +117,10 @@ namespace PulseKey {
             10,58,6,54,9,57,5,53, 42,26,38,22,41,25,37,21
         };
         private static byte Channel(double value,double threshold){return (byte)Math.Max(0,Math.Min(255,(int)Math.Floor(value+threshold)));}
-        private static void EnsureCanvas(int width,int height){
-            width=Math.Max(1,width);height=Math.Max(1,height);
-            if(canvas!=null&&canvasWidth==width&&canvasHeight==height&&canvasTop==Top&&canvasBottom==Bottom)return;
+        private static void EnsureCanvas(int height){
+            const int width=8;
+            height=Math.Max(1,height);
+            if(canvas!=null&&canvasHeight==height&&canvasTop==Top&&canvasBottom==Bottom)return;
             Bitmap next=new Bitmap(width,height,PixelFormat.Format32bppArgb);
             BitmapData data=next.LockBits(new Rectangle(0,0,width,height),ImageLockMode.WriteOnly,PixelFormat.Format32bppArgb);
             try{
@@ -136,15 +137,21 @@ namespace PulseKey {
                 }
                 Marshal.Copy(pixels,0,data.Scan0,pixels.Length);
             }finally{next.UnlockBits(data);}
-            if(canvas!=null)canvas.Dispose();canvas=next;canvasWidth=width;canvasHeight=height;canvasTop=Top;canvasBottom=Bottom;
+            if(canvas!=null)canvas.Dispose();canvas=next;canvasHeight=height;canvasTop=Top;canvasBottom=Bottom;
         }
         public static void Paint(Graphics g,Control c) {
             int x=0,y=0;Control node=c;
             while(node!=null && !(node is Form)){x+=node.Left;y+=node.Top;node=node.Parent;}
             Form form=node as Form;
-            EnsureCanvas(form==null?c.Width:form.ClientSize.Width,form==null?c.Height:form.ClientSize.Height);
+            EnsureCanvas(form==null?c.Height:form.ClientSize.Height);
             GraphicsState state=g.Save();
-            try{g.SetClip(c.ClientRectangle);g.DrawImageUnscaled(canvas,-x,-y);}finally{g.Restore(state);}
+            try{
+                g.SetClip(c.ClientRectangle);
+                using(TextureBrush brush=new TextureBrush(canvas,WrapMode.Tile)){
+                    brush.TranslateTransform(-x,-y);
+                    g.FillRectangle(brush,c.ClientRectangle);
+                }
+            }finally{g.Restore(state);}
         }
         public static void PaintUnder(Graphics g,Control c) {
             int x=c.Left;
@@ -319,6 +326,7 @@ namespace PulseKey {
         private RoundedPanel hero;
         private Label status = new Label();
         private RoundedButton startButton = new RoundedButton();
+        private RoundedButton fullscreenButton = new RoundedButton();
         private RoundedSelect targetBox, mouseBox;
         private RoundedButton keyButton, holdButton, repeatButton;
         private TextBox intervalBox;
@@ -337,10 +345,15 @@ namespace PulseKey {
         private CancellationTokenSource macroCancel;
         private MacroFile macro = new MacroFile();
         private string page = "Quick action";
+        private bool fullscreen, previousTopMost;
+        private Rectangle previousBounds;
+        private Size previousMinimumSize;
+        private FormWindowState previousWindowState;
+        private FormBorderStyle previousBorderStyle;
 
         public AppForm() {
             LoadSettings(); ApplyColors();
-            Text = "PulseKey"; Size = new Size(1100,810); MinimumSize = new Size(1000,780);
+            Text = "PulseKey"; Size = new Size(1100,810); MinimumSize = new Size(1100,780);
             StartPosition = FormStartPosition.CenterScreen; Font = new Font("Segoe UI",10);
             AutoScaleMode = AutoScaleMode.Dpi; Icon = MakeIcon();
             root.Dock = DockStyle.Fill; root.BackColor = bg; Controls.Add(root);
@@ -350,7 +363,8 @@ namespace PulseKey {
             root.Controls.SetChildIndex(content,0); root.Controls.SetChildIndex(header,1); root.Controls.SetChildIndex(sidebar,2);
             BuildShell(); BuildPage();
             actionTimer.Tick += ActionTick;
-            header.Resize += (s,e)=>{startButton.Left=header.ClientSize.Width-148;status.Left=startButton.Left-157;};
+            header.Resize += (s,e)=>LayoutHeader();
+            content.Resize += (s,e)=>LayoutWorkspace();
             Shown += (s,e) => { TintTitleBar();
                 bool startHotkey=Native.RegisterHotKey(Handle,1,0,(uint)Keys.F8), stopHotkey=Native.RegisterHotKey(Handle,2,0,(uint)Keys.F9);
                 RefreshTargets(); if(!startHotkey||!stopHotkey)MessageBox.Show(this,"F8 or F9 is already in use. Close the conflicting app and restart PulseKey. The on-screen buttons still work.","Hotkey unavailable",MessageBoxButtons.OK,MessageBoxIcon.Warning); };
@@ -389,13 +403,31 @@ namespace PulseKey {
             while(parent.Controls.Count>0) { Control child=parent.Controls[0];parent.Controls.RemoveAt(0);child.Dispose(); }
         }
         private void AddShadow(Control parent,int left,int top,int width,int height) {
-            CardShadow shadow=new CardShadow { Left=left+2,Top=top+4,Width=width+5,Height=height+6,Anchor=AnchorStyles.Top|AnchorStyles.Left|AnchorStyles.Right };
+            CardShadow shadow=new CardShadow { Width=width+5,Height=height+6,Anchor=AnchorStyles.Top|AnchorStyles.Left };
             parent.Controls.Add(shadow);
+            PlaceWorkspace(shadow,left+2,top+4);
+        }
+        private int WorkspaceWidth(){return Math.Max(500,Math.Min(840,content.ClientSize.Width-56));}
+        private int WorkspaceLeft(){return Math.Max(0,(content.ClientSize.Width-WorkspaceWidth())/2);}
+        private int WorkspaceTop(){return Math.Max(0,(content.ClientSize.Height-700)/2);}
+        private void PlaceWorkspace(Control control,int x,int y){control.Tag=new Point(x,y);control.Left=WorkspaceLeft()+x;control.Top=WorkspaceTop()+y;}
+        private void LayoutWorkspace(){
+            int width=WorkspaceWidth();
+            foreach(Control control in content.Controls){
+                if(!(control.Tag is Point))continue;
+                Point position=(Point)control.Tag;
+                control.Left=WorkspaceLeft()+position.X;
+                control.Top=WorkspaceTop()+position.Y;
+                if(control is CardShadow)control.Width=width+5;
+                else if(control is RoundedPanel)control.Width=width;
+            }
+            content.Invalidate();
         }
         private Panel Card(Control parent, int top, int height) {
-            int width=Math.Max(500,parent.ClientSize.Width-56);
+            int width=WorkspaceWidth();
             AddShadow(parent,0,top,width,height);
-            Panel p=new RoundedPanel { Left=0, Top=top, Width=width, Height=height, Radius=8, BackColor=surface, PaintCanvas=true, Outline=secondaryLine, Anchor=AnchorStyles.Top|AnchorStyles.Left|AnchorStyles.Right };
+            Panel p=new RoundedPanel { Width=width, Height=height, Radius=8, BackColor=surface, PaintCanvas=true, Outline=secondaryLine, Anchor=AnchorStyles.Top|AnchorStyles.Left };
+            PlaceWorkspace(p,0,top);
             parent.Controls.Add(p);p.BringToFront();
             return p;
         }
@@ -407,6 +439,7 @@ namespace PulseKey {
             Put(parent,box,12,10);return box;
         }
         private int ReadMilliseconds(TextBox box,int fallback) { int value;return int.TryParse(box.Text,out value)?Math.Max(50,Math.Min(10000,value)):fallback; }
+        private static string DisplayKey(string value){return value=="ShiftKey"?"Shift":value=="ControlKey"?"Ctrl":value=="Menu"?"Alt":value;}
 
         private void BuildShell() {
             ClearControls(sidebar); ClearControls(header);
@@ -422,8 +455,32 @@ namespace PulseKey {
             Put(sidebar,author,80,footerTop);author.Anchor=AnchorStyles.Bottom|AnchorStyles.Left;
             status=Label("●  Idle",9,true); status.ForeColor=muted; status.AutoSize=false; status.TextAlign=ContentAlignment.MiddleRight; status.Width=145; status.Height=40; status.Top=13; status.Anchor=AnchorStyles.Top|AnchorStyles.Right; header.Controls.Add(status);
             startButton=Button("Start  F8",(s,e)=>Toggle(),true); startButton.Width=120; startButton.Top=14; startButton.Anchor=AnchorStyles.Top|AnchorStyles.Right; header.Controls.Add(startButton);
-            startButton.Left=header.ClientSize.Width-148;status.Left=startButton.Left-157;
+            fullscreenButton=Button(fullscreen?"Exit full screen  F11":"Full screen  F11",(s,e)=>ToggleFullscreen()); fullscreenButton.Width=145;fullscreenButton.Top=14;fullscreenButton.Anchor=AnchorStyles.Top|AnchorStyles.Right;header.Controls.Add(fullscreenButton);
+            LayoutHeader();
             UpdateStatus();
+        }
+        private void LayoutHeader(){
+            if(startButton==null||startButton.IsDisposed||fullscreenButton==null||fullscreenButton.IsDisposed||status==null||status.IsDisposed)return;
+            startButton.Left=header.ClientSize.Width-148;
+            fullscreenButton.Left=startButton.Left-157;
+            status.Left=fullscreenButton.Left-157;
+        }
+        private void ToggleFullscreen(){
+            if(!fullscreen){
+                previousWindowState=WindowState;previousBounds=WindowState==FormWindowState.Normal?Bounds:RestoreBounds;
+                previousBorderStyle=FormBorderStyle;previousTopMost=TopMost;previousMinimumSize=MinimumSize;
+                Rectangle screen=Screen.FromControl(this).Bounds;
+                WindowState=FormWindowState.Normal;MinimumSize=Size.Empty;FormBorderStyle=FormBorderStyle.None;Bounds=screen;TopMost=true;fullscreen=true;
+            }else{
+                TopMost=previousTopMost;WindowState=FormWindowState.Normal;FormBorderStyle=previousBorderStyle;
+                MinimumSize=previousMinimumSize;Bounds=previousBounds;WindowState=previousWindowState;fullscreen=false;
+            }
+            if(fullscreenButton!=null&&!fullscreenButton.IsDisposed)fullscreenButton.Text=fullscreen?"Exit full screen  F11":"Full screen  F11";
+            LayoutWorkspace();
+        }
+        protected override bool ProcessCmdKey(ref Message msg,Keys keyData){
+            if(keyData==Keys.F11){ToggleFullscreen();return true;}
+            return base.ProcessCmdKey(ref msg,keyData);
         }
         private void BuildPage() {
             ClearControls(content);
@@ -442,7 +499,7 @@ namespace PulseKey {
             RoundedButton keyboard=Button("Keyboard",(s,e)=>{inputKind="Keyboard";UpdateInputMode();}); keyboard.Name="keyboard"; Put(inputCard,keyboard,22,48,130);
             RoundedButton mouse=Button("Mouse",(s,e)=>{inputKind="Mouse";UpdateInputMode();}); mouse.Name="mouse"; Put(inputCard,mouse,164,48,130);
             Put(inputCard,SectionLabel("Selected key or button",9),324,54);
-            keyButton=Button(selectedKey.ToString(),(s,e)=>CaptureQuickKey()); Put(inputCard,keyButton,324,86,220);
+            keyButton=Button(DisplayKey(selectedKey.ToString()),(s,e)=>CaptureQuickKey()); Put(inputCard,keyButton,324,86,220);
             mouseBox=Combo(); mouseBox.Items.AddRange(new object[]{"Left","Right","Middle","X1","X2"}); mouseBox.SelectedItem=selectedMouse; mouseBox.SelectedIndexChanged+=(s,e)=>{StopAll();selectedMouse=mouseBox.Text;SaveSettings();}; Put(inputCard,mouseBox,324,87,220);
             Label captureHint=Label("Click the key field to capture any key.",9);captureHint.ForeColor=muted;Put(inputCard,captureHint,22,130);
             UpdateInputMode(false);
@@ -456,10 +513,10 @@ namespace PulseKey {
             cpsLabel=Label("",9); cpsLabel.ForeColor=muted; Put(modeCard,cpsLabel,22,108);
             intervalBox.Leave+=(s,e)=>{interval=ReadMilliseconds(intervalBox,interval);intervalBox.Text=interval.ToString();UpdateMode();SaveSettings();};
             UpdateMode();
-            Label tip=Label("F8 starts or pauses   ·   F9 releases and stops   ·   Output runs only while your target is in front.",9); tip.ForeColor=muted; Put(content,tip,4,608);
+            Label tip=Label("F8 starts or pauses   ·   F9 releases and stops   ·   Output runs only while your target is in front.",9); tip.ForeColor=muted; PlaceWorkspace(tip,4,608);content.Controls.Add(tip);
             RefreshTargets();
         }
-        private RoundedPanel Hero(int top,int height){int width=Math.Max(500,content.ClientSize.Width-56);AddShadow(content,0,top,width,height);hero=new RoundedPanel{Radius=8,Left=0,Top=top,Width=width,Height=height,BackColor=surface,PaintCanvas=true,Outline=secondaryLine,Anchor=AnchorStyles.Top|AnchorStyles.Left|AnchorStyles.Right};content.Controls.Add(hero);hero.BringToFront();return hero;}
+        private RoundedPanel Hero(int top,int height){int width=WorkspaceWidth();AddShadow(content,0,top,width,height);hero=new RoundedPanel{Radius=8,Width=width,Height=height,BackColor=surface,PaintCanvas=true,Outline=secondaryLine,Anchor=AnchorStyles.Top|AnchorStyles.Left};PlaceWorkspace(hero,0,top);content.Controls.Add(hero);hero.BringToFront();return hero;}
         private void UpdateInputMode(bool userChange=true) {
             if(keyButton==null||mouseBox==null)return;
             keyButton.Visible=inputKind=="Keyboard"; mouseBox.Visible=inputKind=="Mouse";
@@ -475,14 +532,14 @@ namespace PulseKey {
             if(armed) StopAll(); SaveSettings();
         }
         private void CaptureQuickKey() {
-            Keys? result=CaptureKey(); if(result.HasValue) { StopAll();selectedKey=result.Value; keyButton.Text=selectedKey.ToString(); SaveSettings(); }
+            Keys? result=CaptureKey(); if(result.HasValue) { StopAll();selectedKey=result.Value; keyButton.Text=DisplayKey(selectedKey.ToString()); SaveSettings(); }
         }
         private Keys? CaptureKey(IWin32Window owner=null) {
             using(Form f=new Form()) {
                 f.Text="Choose a key";f.Size=new Size(360,170);f.StartPosition=FormStartPosition.CenterParent;f.FormBorderStyle=FormBorderStyle.FixedDialog;f.MaximizeBox=false;f.MinimizeBox=false;f.KeyPreview=true;f.BackColor=surface;
-                Label l=Label("Press the key you want to use\nF8 and F9 are reserved for controls.",11);l.Location=new Point(28,28);f.Controls.Add(l);
+                Label l=Label("Press the key you want to use\nShift is supported. F8 and F9 are reserved.",11);l.Location=new Point(28,28);f.Controls.Add(l);
                 Keys? result=null;
-                f.KeyDown+=(s,e)=>{ Keys k=e.KeyCode; if(k!=Keys.F8&&k!=Keys.F9&&k!=Keys.None&&k!=Keys.ControlKey&&k!=Keys.ShiftKey&&k!=Keys.Menu) {result=k;f.DialogResult=DialogResult.OK;f.Close();} e.SuppressKeyPress=true;};
+                f.KeyDown+=(s,e)=>{ Keys k=e.KeyCode; if(k!=Keys.F8&&k!=Keys.F9&&k!=Keys.None) {result=k;f.DialogResult=DialogResult.OK;f.Close();} e.SuppressKeyPress=true;};
                 return f.ShowDialog(owner??this)==DialogResult.OK?result:null;
             }
         }
@@ -511,7 +568,7 @@ namespace PulseKey {
             RoundedButton load=Button("Load",(s,e)=>LoadMacro());Put(card,load,144,427,112);
             Label note=Label("Runs once when the target is in front.",9);note.ForeColor=muted;Put(card,note,285,439);
             RoundedButton run=Button("Run once",(s,e)=>RunMacro(),true);Put(card,run,620,427,150);
-            Label tip=Label("Edit changes a step's input and timing. Move steps with Up and Down. F9 stops playback.",9);tip.ForeColor=muted;Put(content,tip,4,614);
+            Label tip=Label("Edit changes a step's input and timing. Move steps with Up and Down. F9 stops playback.",9);tip.ForeColor=muted;PlaceWorkspace(tip,4,614);content.Controls.Add(tip);
         }
         private void RefreshSteps() {
             if(stepsHost==null||stepsHost.IsDisposed)return;
@@ -525,7 +582,7 @@ namespace PulseKey {
                 int index=i;MacroStep step=macro.Steps[i];
                 RoundedPanel row=new RoundedPanel{Left=0,Top=i*70,Width=472,Height=62,Radius=7,BackColor=Shape.Blend(surface2,accent,.04f),FillEnd=Shape.Blend(surface2,accentAlt,.08f),Outline=secondaryLine};stepsHost.Controls.Add(row);
                 Label number=Label((i+1).ToString("00"),10,true);number.ForeColor=accentAlt;Put(row,number,13,20);
-                string action=step.Kind=="Click"?"Click "+step.Value:step.Kind=="Delay"?"Wait "+step.DelayMs+" ms":"Press "+step.Value;
+                string action=step.Kind=="Click"?"Click "+step.Value:step.Kind=="Delay"?"Wait "+step.DelayMs+" ms":"Press "+DisplayKey(step.Value);
                 Put(row,Label(action,11,true),53,10);
                 Label after=Label(step.Kind=="Delay"?"Pause in sequence":"then wait "+step.DelayMs+" ms",8);after.ForeColor=muted;Put(row,after,54,36);
                 RoundedButton edit=Button("Edit",(s,e)=>EditStep(index));Put(row,edit,226,15,53);edit.Height=32;
@@ -561,7 +618,7 @@ namespace PulseKey {
                 f.Size=new Size(410,280);
                 Label title=SectionLabel(step.Kind=="Delay"?"WAIT DURATION":step.Kind=="Click"?"MOUSE BUTTON":"KEY");Put(f,title,24,22);
                 RoundedSelect mouse=null;RoundedButton keyChoice=null;
-                if(step.Kind=="Key") {keyChoice=Button(value,(s,e)=>{Keys? k=CaptureKey(f);if(k.HasValue){value=k.Value.ToString();keyChoice.Text=value;}},true);Put(f,keyChoice,24,52,230);}
+                if(step.Kind=="Key") {keyChoice=Button(DisplayKey(value),(s,e)=>{Keys? k=CaptureKey(f);if(k.HasValue){value=k.Value.ToString();keyChoice.Text=DisplayKey(value);}},true);Put(f,keyChoice,24,52,230);}
                 else if(step.Kind=="Click") {mouse=Combo();mouse.Items.AddRange(new object[]{"Left","Right","Middle","X1","X2"});mouse.SelectedItem=value;Put(f,mouse,24,52,230);}
                 else {Label wait=Label("Pause playback for this many milliseconds.",9);wait.ForeColor=muted;Put(f,wait,24,54);}
                 Label timing=SectionLabel(step.Kind=="Delay"?"MILLISECONDS":"WAIT AFTER THIS STEP (MS)");Put(f,timing,24,103);

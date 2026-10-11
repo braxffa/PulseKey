@@ -22,4 +22,4 @@ PulseKey offers 15 dark themes. Each uses a smooth gradient across the full appl
 
 ![All PulseKey theme previews](images/all-themes.png)
 
-The full-window gradient is a cached bitmap. It is regenerated when the theme or window size changes, with subtle dithering to reduce visible color banding. Theme selection does not run an idle animation timer.
+The full-window gradient is painted from a cached eight-pixel-wide vertical strip. It is regenerated when the theme or window height changes, with subtle dithering to reduce visible color banding. Theme selection does not run an idle animation timer.

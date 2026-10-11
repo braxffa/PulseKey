@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.0.1 — 2026-10-10
+
+- Added F11 and a visible button for true borderless full screen, with restoration of the prior window state.
+- Centered the working cards when maximized or in full screen instead of stretching them and leaving their controls at one edge.
+- Replaced the full-width gradient bitmap with an eight-pixel-wide tiled strip to keep full-screen resize light and preserve color continuity.
+- Allowed Shift, Ctrl, and Alt in the key picker; macro steps display friendly modifier names while preserving Windows Forms key values in XML.
+
 ## v1.0.0 — 2026-10-10
 
 First public PulseKey release by [@BraxFFA](https://linktr.ee/BraxFFA).
