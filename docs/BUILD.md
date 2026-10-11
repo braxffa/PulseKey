@@ -20,6 +20,31 @@ The script writes `dist\PulseKey.exe`. It locates the 64-bit .NET Framework comp
 
 The assembly version is `1.0.2.0`; the package/release tag is `v1.0.2`. The executable is not code signed. Build on a trusted Windows machine and compare release checksums with the attached `SHA256SUMS-v1.0.2.txt` if you download a prebuilt package.
 
+## Signing a release
+
+The published v1.0.2 downloads are unsigned. To produce a future signed release, use a validated **Public Trust** certificate profile in [Azure Artifact Signing](https://learn.microsoft.com/en-us/azure/artifact-signing/quickstart), or an independently issued code-signing certificate. Artifact Signing requires an eligible paid Azure subscription, completed identity validation, and the Certificate Profile Signer role. Its [Basic plan](https://azure.microsoft.com/en-us/products/artifact-signing) has a monthly charge. Do not publish an executable as signed until verification succeeds.
+
+Install [Microsoft's Artifact Signing Client Tools](https://learn.microsoft.com/en-us/azure/artifact-signing/how-to-signing-integrations) on the Windows signing machine:
+
+```powershell
+winget install -e --id Microsoft.Azure.ArtifactSigningClientTools
+```
+
+After building, run the included script with values from the Azure account and certificate profile:
+
+```powershell
+.\scripts\sign-artifact.ps1 `
+  -Endpoint 'https://<region>.codesigning.azure.net' `
+  -AccountName '<account-name>' `
+  -CertificateProfileName '<profile-name>' `
+  -InputPath '.\dist\PulseKey.exe' `
+  -OutputPath '.\dist\PulseKey-signed.exe'
+```
+
+The script signs a **copy** with SHA-256 and a Microsoft timestamp, then requires successful SignTool and Windows Authenticode verification. A failed output is removed. Check the printed publisher name and SHA-256 hash before packaging. The account endpoint and profile name are configuration values; do not put Azure credentials or private signing keys in the repository. Recompute release checksums after signing because a signature changes the executable bytes.
+
+For a local, non-admin setup, extract the official `Microsoft.ArtifactSigning.Client` NuGet package and .NET 8 runtime into a private working directory. Pass the x64 library path with `-DlibPath` and the runtime directory with `-DotNetRoot`; neither dependency needs to be committed to this repository.
+
 ## Manual smoke test
 
 1. Launch the built executable and verify the three pages open.
