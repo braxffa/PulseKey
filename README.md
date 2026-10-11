@@ -10,7 +10,7 @@ PulseKey is a portable 64-bit Windows app built with Windows Forms and the .NET 
 
 ## Download
 
-Get `PulseKey-v1.0.3-win-x64.zip` from [Releases](../../releases). Extract it to a folder, then run `PulseKey.exe`. A standalone executable and `SHA256SUMS-v1.0.3.txt` are also attached to the release.
+Get `PulseKey-v1.0.4-win-x64.zip` from [Releases](../../releases). Extract it to a folder, then run `PulseKey.exe`. A standalone executable and `SHA256SUMS-v1.0.4.txt` are also attached to the release.
 
 > Windows may display a SmartScreen prompt for an unsigned app. Review the source and the release checksum before choosing whether to run it. The release is not code signed.
 
@@ -22,7 +22,7 @@ Get `PulseKey-v1.0.3-win-x64.zip` from [Releases](../../releases). Extract it to
 | Macro studio | Build a sequence from key presses, mouse clicks, and waits. Edit, reorder, save, load, and run it once. |
 | Appearance | Choose from 15 dark themes with smooth window-wide gradients and two coordinated accent colors. |
 
-- **Hold or repeat:** Repeat interval is adjustable from 50 to 10,000 ms; the app displays the approximate actions per second.
+- **Hold or repeat:** Repeat interval is adjustable from 50 to 10,000 ms; the approximate actions per second updates as you type.
 - **Controls:** `F8` starts or stops a quick action; `F9` stops and releases any held input; `F11` enters or exits full screen. The same actions have visible buttons.
 - **States:** **Idle** means stopped, **Armed** means waiting for the selected window, and **Active** means output is running while that window is in front.
 - **Target scope:** PulseKey enumerates ordinary visible top-level windows. It pauses output when the target loses focus and stops if that window closes.

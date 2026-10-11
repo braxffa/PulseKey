@@ -23,7 +23,7 @@ On 64-bit Windows with the Windows SDK `MakeAppx.exe` available, run from the re
   -Publisher '<Package/Identity/Publisher from Partner Center>'
 ```
 
-The script compiles the app from `src/PulseKey.cs`, creates Store tile PNGs, writes a full-trust desktop manifest, packages the result as `dist\PulseKey-v1.0.3-win-x64-store.msix`, checks its expected files, and prints a SHA-256 hash. The resulting **submission package is unsigned**. Do not attach it to GitHub as a trusted signed download.
+The script compiles the app from `src/PulseKey.cs`, creates Store tile PNGs, writes a full-trust desktop manifest, packages the result as `dist\PulseKey-v1.0.4-win-x64-store.msix`, checks its expected files, and prints a SHA-256 hash. The resulting **submission package is unsigned**. Do not attach it to GitHub as a trusted signed download.
 
 When changing the app version, update the assembly and file versions in `src/PulseKey.cs` first; the package version comes from the built EXE. Keep the fourth package version field at `0` for Store submission.
 

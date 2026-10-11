@@ -18,7 +18,7 @@ The script writes `dist\PulseKey.exe`. It locates the 64-bit .NET Framework comp
 & "$env:WINDIR\Microsoft.NET\Framework64\v4.0.30319\csc.exe" /nologo /target:winexe /platform:x64 /win32icon:assets\PulseKey.ico /r:System.Windows.Forms.dll /r:System.Drawing.dll /r:System.Xml.dll /out:dist\PulseKey.exe src\PulseKey.cs
 ```
 
-The assembly version is `1.0.3.0`; the package/release tag is `v1.0.3`. The executable is not code signed. Build on a trusted Windows machine and compare release checksums with the attached `SHA256SUMS-v1.0.3.txt` if you download a prebuilt package.
+The assembly version is `1.0.4.0`; the package/release tag is `v1.0.4`. The executable is not code signed. Build on a trusted Windows machine and compare release checksums with the attached `SHA256SUMS-v1.0.4.txt` if you download a prebuilt package.
 
 ## Free Microsoft Store package signing
 

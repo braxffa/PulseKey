@@ -19,8 +19,8 @@ using System.Xml.Serialization;
 [assembly: System.Reflection.AssemblyProduct("PulseKey")]
 [assembly: System.Reflection.AssemblyCompany("@BraxFFA")]
 [assembly: System.Reflection.AssemblyCopyright("Copyright (c) 2026 @BraxFFA")]
-[assembly: System.Reflection.AssemblyVersion("1.0.3.0")]
-[assembly: System.Reflection.AssemblyFileVersion("1.0.3.0")]
+[assembly: System.Reflection.AssemblyVersion("1.0.4.0")]
+[assembly: System.Reflection.AssemblyFileVersion("1.0.4.0")]
 
 namespace PulseKey {
     [Serializable]
@@ -270,6 +270,10 @@ namespace PulseKey {
         public Color Hint=Color.FromArgb(149,164,205);
         public Color ArrowColor=Color.FromArgb(149,164,205);
         public Color FillEnd=Color.Transparent;
+        public Color SelectedFill=Color.Transparent;
+        public Color SelectedFillEnd=Color.Transparent;
+        public Color SelectedOutline=Color.Transparent;
+        public Color SelectedText=Color.Transparent;
         public string Placeholder="Choose an option";
         private int selected=-1;
         private bool hover;
@@ -290,12 +294,15 @@ namespace PulseKey {
         protected override void Dispose(bool disposing){if(disposing&&menu!=null)menu.Dispose();base.Dispose(disposing);}
         protected override void OnKeyDown(KeyEventArgs e){if(e.KeyCode==Keys.Enter||e.KeyCode==Keys.Space||e.KeyCode==Keys.Down){OnClick(EventArgs.Empty);e.Handled=true;}base.OnKeyDown(e);}
         protected override void OnPaint(PaintEventArgs e){e.Graphics.SmoothingMode=SmoothingMode.AntiAlias;e.Graphics.PixelOffsetMode=PixelOffsetMode.HighQuality;RectangleF r=new RectangleF(.5f,.5f,Width-1f,Height-1f);
+            bool chosen=SelectedItem!=null;
+            Color fill=chosen&&SelectedFill.A>0?SelectedFill:BackColor;
+            Color end=chosen&&SelectedFillEnd.A>0?SelectedFillEnd:FillEnd;
             using(GraphicsPath p=Shape.Round(r,6)){
-                if(FillEnd==Color.Transparent)using(Brush b=new SolidBrush(BackColor))e.Graphics.FillPath(b,p);
-                else using(Brush b=new LinearGradientBrush(new Rectangle(0,0,Math.Max(1,Width),Math.Max(1,Height)),BackColor,FillEnd,LinearGradientMode.Horizontal))e.Graphics.FillPath(b,p);
+                if(end==Color.Transparent)using(Brush b=new SolidBrush(fill))e.Graphics.FillPath(b,p);
+                else using(Brush b=new LinearGradientBrush(new Rectangle(0,0,Math.Max(1,Width),Math.Max(1,Height)),fill,end,LinearGradientMode.Horizontal))e.Graphics.FillPath(b,p);
             }
-            using(GraphicsPath p=Shape.Round(r,6))using(Pen pen=new Pen(hover||Focused?ForeColor:Outline,1f))e.Graphics.DrawPath(pen,p);
-            string value=SelectedItem==null?Placeholder:Text;Color color=SelectedItem==null?Hint:ForeColor;
+            using(GraphicsPath p=Shape.Round(r,6))using(Pen pen=new Pen(hover||Focused?ForeColor:chosen&&SelectedOutline.A>0?SelectedOutline:Outline,chosen?1.6f:1f))e.Graphics.DrawPath(pen,p);
+            string value=chosen?Text:Placeholder;Color color=chosen?(SelectedText.A>0?SelectedText:ForeColor):Hint;
             TextRenderer.DrawText(e.Graphics,value,Font,new Rectangle(14,0,Width-45,Height),color,TextFormatFlags.VerticalCenter|TextFormatFlags.Left|TextFormatFlags.EndEllipsis);
             using(Pen pen=new Pen(ArrowColor,1.8f)){int cx=Width-21,cy=Height/2;e.Graphics.DrawLines(pen,new[]{new Point(cx-5,cy-2),new Point(cx,cy+3),new Point(cx+5,cy-2)});}
         }
@@ -417,6 +424,14 @@ namespace PulseKey {
             RoundedButton b=new RoundedButton { Text=value, BackColor=primary?accent:Shape.Blend(surface2,accent,.10f), FillEnd=primary?accentAlt:Shape.Blend(surface2,accentAlt,.20f), ForeColor=primary?bg:secondaryText, Outline=primary?Color.Transparent:secondaryLine, Font=new Font("Segoe UI",10,FontStyle.Bold), Height=40, Width=130, TabStop=true };
             b.Click+=click; return b;
         }
+        private void StyleChoice(RoundedButton button,bool selected){
+            button.BackColor=selected?accent:Shape.Blend(surface2,accent,.08f);
+            button.FillEnd=selected?accentAlt:Shape.Blend(surface2,accentAlt,.12f);
+            button.ForeColor=selected?bg:secondaryText;
+            button.Outline=selected?Color.Transparent:secondaryLine;
+            button.TransparentFill=false;
+            button.Invalidate();
+        }
         private void ClearControls(Control parent) {
             while(parent.Controls.Count>0) { Control child=parent.Controls[0];UnregisterUiTree(child);parent.Controls.RemoveAt(0);child.Dispose(); }
         }
@@ -506,7 +521,7 @@ namespace PulseKey {
             return p;
         }
         private void Put(Control parent, Control c, int x, int y, int width=0) { c.Location=new Point(x,y); if(width>0)c.Width=width; parent.Controls.Add(c); }
-        private RoundedSelect Combo() { return new RoundedSelect { BackColor=Shape.Blend(surface2,accent,.06f), FillEnd=Shape.Blend(surface2,accentAlt,.15f), ForeColor=textColor, Outline=secondaryLine, ArrowColor=accentAlt, Hint=muted, Font=new Font("Segoe UI",10), Height=38 }; }
+        private RoundedSelect Combo() { return new RoundedSelect { BackColor=Shape.Blend(surface2,accent,.06f), FillEnd=Shape.Blend(surface2,accentAlt,.15f), SelectedFill=Shape.Blend(surface2,accent,.22f), SelectedFillEnd=Shape.Blend(surface2,accentAlt,.32f), SelectedOutline=accentAlt, SelectedText=accentAlt, ForeColor=textColor, Outline=secondaryLine, ArrowColor=accentAlt, Hint=muted, Font=new Font("Segoe UI",10), Height=38 }; }
         private TextBox NumberInput(Control parent,int initial,int width) {
             TextBox box=new TextBox { Text=Math.Max(50,Math.Min(10000,initial)).ToString(), BackColor=surface2, ForeColor=secondaryText, BorderStyle=BorderStyle.None, Font=new Font("Segoe UI",10), Width=width };
             box.KeyPress+=(s,e)=>{if(!Char.IsControl(e.KeyChar)&&!Char.IsDigit(e.KeyChar))e.Handled=true;};
@@ -520,7 +535,7 @@ namespace PulseKey {
             Label brand=Label("PULSEKEY",16,true); brand.ForeColor=accentAlt; Put(sidebar,brand,24,27);
             Label sub=Label("DESKTOP INPUT STUDIO",8,true); sub.ForeColor=muted; Put(sidebar,sub,27,61);
             string[] pages={"Quick action","Macro studio","Appearance"};
-            for(int i=0;i<pages.Length;i++) { string name=pages[i]; RoundedButton b=Button(name,(s,e)=>{page=name;BuildShell();BuildPage();}); b.TextAlign=ContentAlignment.MiddleLeft; b.Width=188; b.Height=46; b.Left=16; b.Top=138+i*56; b.Padding=new Padding(10,0,0,0); b.BackColor=page==name?Shape.Blend(surface2,accent,.22f):surface2; b.FillEnd=page==name?Shape.Blend(surface2,accentAlt,.30f):Color.Transparent; b.ForeColor=page==name?accent:muted;b.Outline=page==name?secondaryLine:Color.Transparent;b.TransparentFill=page!=name; sidebar.Controls.Add(b); }
+            for(int i=0;i<pages.Length;i++) { string name=pages[i]; RoundedButton b=Button(name,(s,e)=>{page=name;BuildShell();BuildPage();}); b.TextAlign=ContentAlignment.MiddleLeft; b.Width=188; b.Height=46; b.Left=16; b.Top=138+i*56; b.Padding=new Padding(10,0,0,0); if(page==name)StyleChoice(b,true);else{b.BackColor=surface2;b.FillEnd=Color.Transparent;b.ForeColor=muted;b.Outline=Color.Transparent;b.TransparentFill=true;} sidebar.Controls.Add(b); }
             madeBy=Label("Made by",8);madeBy.ForeColor=muted;Put(sidebar,madeBy,27,0);madeBy.Anchor=AnchorStyles.Bottom|AnchorStyles.Left;
             author=new LinkLabel{Text="@BraxFFA",AutoSize=true,BackColor=Color.Transparent,Font=new Font("Segoe UI",8,FontStyle.Bold),LinkColor=accentAlt,ActiveLinkColor=accent,VisitedLinkColor=accentAlt,LinkBehavior=LinkBehavior.HoverUnderline,TabStop=true};
             author.LinkArea=new LinkArea(0,author.Text.Length);
@@ -582,7 +597,7 @@ namespace PulseKey {
             RoundedButton keyboard=Button("Keyboard",(s,e)=>{inputKind="Keyboard";UpdateInputMode();}); keyboard.Name="keyboard"; Put(inputCard,keyboard,22,48,130);
             RoundedButton mouse=Button("Mouse",(s,e)=>{inputKind="Mouse";UpdateInputMode();}); mouse.Name="mouse"; Put(inputCard,mouse,164,48,130);
             Put(inputCard,SectionLabel("Selected key or button",9),324,54);
-            keyButton=Button(DisplayKey(selectedKey.ToString()),(s,e)=>CaptureQuickKey()); Put(inputCard,keyButton,324,86,220);
+            keyButton=Button(DisplayKey(selectedKey.ToString()),(s,e)=>CaptureQuickKey()); keyButton.BackColor=Shape.Blend(surface2,accent,.22f);keyButton.FillEnd=Shape.Blend(surface2,accentAlt,.32f);keyButton.ForeColor=accentAlt;keyButton.Outline=accentAlt;Put(inputCard,keyButton,324,86,220);
             mouseBox=Combo(); mouseBox.Items.AddRange(new object[]{"Left","Right","Middle","X1","X2"}); mouseBox.SelectedItem=selectedMouse; mouseBox.SelectedIndexChanged+=(s,e)=>{StopAll();selectedMouse=mouseBox.Text;SaveSettings();}; Put(inputCard,mouseBox,324,87,220);
             Label captureHint=Label("Click the key field to capture any key.",9);captureHint.ForeColor=muted;Put(inputCard,captureHint,22,130);
             UpdateInputMode(false);
@@ -594,7 +609,8 @@ namespace PulseKey {
             intervalBox=NumberInput(numberWrap,interval,105);
             Put(numberWrap,SectionLabel("ms",9),124,9);
             cpsLabel=Label("",9); cpsLabel.ForeColor=muted; Put(modeCard,cpsLabel,22,108);
-            intervalBox.Leave+=(s,e)=>{interval=ReadMilliseconds(intervalBox,interval);intervalBox.Text=interval.ToString();UpdateMode();SaveSettings();};
+            intervalBox.TextChanged+=(s,e)=>UpdateRepeatEstimate();
+            intervalBox.Leave+=(s,e)=>CommitInterval();
             UpdateMode();
             Label tip=Label("F8 starts or pauses   ·   F9 releases and stops   ·   Output runs only while your target is in front.",9); tip.ForeColor=muted; PlaceWorkspace(tip,4,608);content.Controls.Add(tip);
             RefreshTargets();
@@ -603,16 +619,29 @@ namespace PulseKey {
         private void UpdateInputMode(bool userChange=true) {
             if(keyButton==null||mouseBox==null)return;
             keyButton.Visible=inputKind=="Keyboard"; mouseBox.Visible=inputKind=="Mouse";
-            Control parent=keyButton.Parent; if(parent!=null)foreach(Control c in parent.Controls) if(c.Name=="keyboard"||c.Name=="mouse") { bool selected=(c.Name=="keyboard")== (inputKind=="Keyboard");c.BackColor=selected?Shape.Blend(surface2,accent,.23f):Shape.Blend(surface2,accent,.10f);c.ForeColor=selected?accent:secondaryText;RoundedButton button=c as RoundedButton;if(button!=null)button.FillEnd=Shape.Blend(surface2,accentAlt,selected?0.30f:0.20f);c.Invalidate(); }
+            Control parent=keyButton.Parent; if(parent!=null)foreach(Control c in parent.Controls) if(c.Name=="keyboard"||c.Name=="mouse") StyleChoice((RoundedButton)c,(c.Name=="keyboard")== (inputKind=="Keyboard"));
             if(userChange)StopAll();SaveSettings();
         }
         private void UpdateMode() {
             if(holdButton==null||repeatButton==null||intervalBox==null)return;
-            holdButton.BackColor=mode=="Hold"?Shape.Blend(surface2,accent,.23f):Shape.Blend(surface2,accent,.10f); holdButton.FillEnd=Shape.Blend(surface2,accentAlt,mode=="Hold"?0.30f:0.20f); holdButton.ForeColor=mode=="Hold"?accent:secondaryText;
-            repeatButton.BackColor=mode=="Repeat"?Shape.Blend(surface2,accent,.23f):Shape.Blend(surface2,accent,.10f); repeatButton.FillEnd=Shape.Blend(surface2,accentAlt,mode=="Repeat"?0.30f:0.20f); repeatButton.ForeColor=mode=="Repeat"?accent:secondaryText;
+            StyleChoice(holdButton,mode=="Hold");StyleChoice(repeatButton,mode=="Repeat");
             intervalBox.Enabled=mode=="Repeat";
-            cpsLabel.Text=mode=="Repeat"?String.Format("≈ {0:0.##} actions per second",1000.0/interval):"Holds until stopped or the target loses focus.";
+            UpdateRepeatEstimate();
             if(armed) StopAll(); SaveSettings();
+        }
+        private void UpdateRepeatEstimate(){
+            if(cpsLabel==null||cpsLabel.IsDisposed||intervalBox==null||intervalBox.IsDisposed)return;
+            int value;
+            cpsLabel.Text=mode!="Repeat"?"Holds until stopped or the target loses focus.":
+                !int.TryParse(intervalBox.Text,out value)||value<50||value>10000?"Enter an interval from 50 to 10000 ms.":
+                String.Format("≈ {0:0.##} actions per second",1000.0/value);
+        }
+        private void CommitInterval(){
+            interval=ReadMilliseconds(intervalBox,interval);
+            intervalBox.Text=interval.ToString();
+            UpdateRepeatEstimate();
+            if(armed&&mode=="Repeat")actionTimer.Interval=interval;
+            SaveSettings();
         }
         private void CaptureQuickKey() {
             Keys? result=CaptureKey(); if(result.HasValue) { StopAll();selectedKey=result.Value; keyButton.Text=DisplayKey(selectedKey.ToString()); SaveSettings(); }
@@ -745,7 +774,11 @@ namespace PulseKey {
             Label gallery=SectionLabel("PALETTES");Put(card,gallery,22,127);
             for(int i=0;i<Themes.Length;i++){
                 ThemeSpec spec=Themes[i];RoundedButton tile=Button(spec.Name,(s,e)=>SelectTheme(spec.Name));
-                tile.BackColor=Shape.Blend(spec.Surface2,spec.Accent,.15f);tile.FillEnd=Shape.Blend(spec.Surface2,spec.AccentAlt,.30f);tile.ForeColor=spec.Accent;tile.Outline=spec.Name==theme?spec.Accent:spec.Border;
+                bool selected=spec.Name==theme;
+                tile.BackColor=selected?spec.Accent:Shape.Blend(spec.Surface2,spec.Accent,.15f);
+                tile.FillEnd=selected?spec.AccentAlt:Shape.Blend(spec.Surface2,spec.AccentAlt,.30f);
+                tile.ForeColor=selected?spec.Bottom:spec.Accent;
+                tile.Outline=selected?Color.Transparent:spec.Border;
                 tile.Font=new Font("Segoe UI",9,FontStyle.Bold);tile.Width=143;tile.Height=43;
                 Put(card,tile,22+(i%5)*153,155+(i/5)*56);
             }

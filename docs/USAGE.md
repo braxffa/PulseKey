@@ -5,7 +5,7 @@
 1. Start PulseKey and open the app you want to target.
 2. Choose the app from **Target window**. The list contains visible top-level windows. Use **Refresh list** after opening a new app. The Windows desktop shell and PulseKey itself are omitted.
 3. Choose **Keyboard** or **Mouse**. Click the keyboard field and press the desired key, including Shift, or select Left, Right, Middle, X1, or X2 for mouse input. `F8` and `F9` are reserved for PulseKey controls.
-4. Choose **Hold** to keep the input down while the selected window is active, or **Repeat** to send separate presses/clicks. Enter an interval from 50 to 10,000 milliseconds for Repeat. For example, 100 ms is approximately 10 actions per second.
+4. Choose **Hold** to keep the input down while the selected window is active, or **Repeat** to send separate presses/clicks. Enter an interval from 50 to 10,000 milliseconds for Repeat. The actions-per-second estimate updates as you type; for example, 100 ms is approximately 10 actions per second.
 5. Press **Start** or `F8`. PulseKey becomes **Armed**. Bring the target window to the front to become **Active**. Press **Stop** or `F9` to release and stop.
 
 The action pauses if another window comes to the front. In Hold mode, PulseKey releases the held input on focus loss. If the chosen window closes, the action stops. Reopen or refresh the target list before starting again.

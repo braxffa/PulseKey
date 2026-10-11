@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.0.4 — 2026-10-11
+
+- Updated the Repeat actions-per-second estimate as the interval is typed and applied a committed interval to an armed Repeat action.
+- Made selected page, input, behavior, theme, and dropdown choices stand out across all 15 themes.
+
 ## v1.0.3 — 2026-10-11
 
 - Repainted the full interface when resizing to clear dark blocks behind the sidebar.
