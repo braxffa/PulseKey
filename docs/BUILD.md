@@ -45,6 +45,15 @@ The script signs a **copy** with SHA-256 and a Microsoft timestamp, then require
 
 For a local, non-admin setup, extract the official `Microsoft.ArtifactSigning.Client` NuGet package and .NET 8 runtime into a private working directory. Pass the x64 library path with `-DlibPath` and the runtime directory with `-DotNetRoot`; neither dependency needs to be committed to this repository.
 
+After signing, use `scripts/package-signed-release.ps1` to create the standalone EXE, portable ZIP, and SHA-256 manifest. It rejects unsigned or un-timestamped builds and requires the executable's file version to match the requested release version. Update the assembly version in `src/PulseKey.cs` before building a new version.
+
+```powershell
+.\scripts\package-signed-release.ps1 `
+  -Version '<next-version>' `
+  -SignedExePath '.\dist\PulseKey-signed.exe' `
+  -OutputDirectory '.\release-output'
+```
+
 ## Manual smoke test
 
 1. Launch the built executable and verify the three pages open.
