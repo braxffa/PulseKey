@@ -2,7 +2,7 @@ param(
     [Parameter(Mandatory = $true)][string]$IdentityName,
     [Parameter(Mandatory = $true)][string]$Publisher,
     [string]$StoreDisplayName = 'PulseKey',
-    [string]$PublisherDisplayName = '@BraxFFA',
+    [string]$PublisherDisplayName = 'BraxFFA',
     [string]$OutputPath
 )
 
