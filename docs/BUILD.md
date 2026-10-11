@@ -18,11 +18,11 @@ The script writes `dist\PulseKey.exe`. It locates the 64-bit .NET Framework comp
 & "$env:WINDIR\Microsoft.NET\Framework64\v4.0.30319\csc.exe" /nologo /target:winexe /platform:x64 /win32icon:assets\PulseKey.ico /r:System.Windows.Forms.dll /r:System.Drawing.dll /r:System.Xml.dll /out:dist\PulseKey.exe src\PulseKey.cs
 ```
 
-The assembly version is `1.0.2.0`; the package/release tag is `v1.0.2`. The executable is not code signed. Build on a trusted Windows machine and compare release checksums with the attached `SHA256SUMS-v1.0.2.txt` if you download a prebuilt package.
+The assembly version is `1.0.3.0`; the package/release tag is `v1.0.3`. The executable is not code signed. Build on a trusted Windows machine and compare release checksums with the attached `SHA256SUMS-v1.0.3.txt` if you download a prebuilt package.
 
 ## Free Microsoft Store package signing
 
-The published v1.0.2 GitHub EXE and ZIP are unsigned. The free route is a **Microsoft Store MSIX**: after the app passes Store certification, Microsoft signs the Store-distributed package. This does not sign the standalone EXE or a copy of the MSIX downloaded from GitHub. See [Store release workflow](STORE.md) for the exact steps and current status.
+The published GitHub EXE and ZIP are unsigned. The free route is a **Microsoft Store MSIX**: after the app passes Store certification, Microsoft signs the Store-distributed package. This does not sign the standalone EXE or a copy of the MSIX downloaded from GitHub. See [Store release workflow](STORE.md) for the exact steps and current status.
 
 The repository contains `scripts/package-store-msix.ps1` for preparing the unsigned submission package. It takes the exact package name and publisher identity from Partner Center and validates the generated MSIX. It does not require Azure or the Artifact Signing Client Tools.
 

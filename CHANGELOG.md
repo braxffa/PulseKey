@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.0.3 — 2026-10-11
+
+- Repainted the full interface when resizing to clear dark blocks behind the sidebar.
+- Reduced the minimum window size to 680×480 and scaled the controls to fit.
+
 ## v1.0.2 — 2026-10-10
 
 - Made the whole interface scale with a maximized or full-screen window: working cards, buttons, fields, macro timeline, theme tiles, text, sidebar, and header.

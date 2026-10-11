@@ -19,8 +19,8 @@ using System.Xml.Serialization;
 [assembly: System.Reflection.AssemblyProduct("PulseKey")]
 [assembly: System.Reflection.AssemblyCompany("@BraxFFA")]
 [assembly: System.Reflection.AssemblyCopyright("Copyright (c) 2026 @BraxFFA")]
-[assembly: System.Reflection.AssemblyVersion("1.0.2.0")]
-[assembly: System.Reflection.AssemblyFileVersion("1.0.2.0")]
+[assembly: System.Reflection.AssemblyVersion("1.0.3.0")]
+[assembly: System.Reflection.AssemblyFileVersion("1.0.3.0")]
 
 namespace PulseKey {
     [Serializable]
@@ -186,7 +186,7 @@ namespace PulseKey {
         public Color FillEnd=Color.Transparent;
         public Color CanvasTint=Color.Transparent;
         public bool PaintCanvas;
-        public RoundedPanel(){DoubleBuffered=true;}
+        public RoundedPanel(){DoubleBuffered=true;SetStyle(ControlStyles.ResizeRedraw,true);}
         protected override void OnPaintBackground(PaintEventArgs e){
             if(PaintCanvas){ThemeCanvas.Paint(e.Graphics,this);return;}
             if(CanvasTint.A>0)ThemeCanvas.Paint(e.Graphics,this);
@@ -368,7 +368,7 @@ namespace PulseKey {
 
         public AppForm() {
             LoadSettings(); ApplyColors();
-            Text = "PulseKey"; Size = new Size(1100,810); MinimumSize = new Size(1100,780);
+            Text = "PulseKey"; Size = new Size(1100,810); MinimumSize = new Size(680,480);
             baseClientSize=ClientSize;
             StartPosition = FormStartPosition.CenterScreen; Font = new Font("Segoe UI",10);
             AutoScaleMode = AutoScaleMode.Dpi; Icon = MakeIcon();
@@ -467,14 +467,14 @@ namespace PulseKey {
         }
         private void UpdateUiScale(){
             if(baseClientSize.Width<1||baseClientSize.Height<1)return;
-            float minimum=fullscreen?.55f:1f;
+            float minimum=fullscreen?.55f:.60f;
             float next=Math.Max(minimum,Math.Min(1.9f,Math.Min((float)ClientSize.Width/Math.Max(baseClientSize.Width,1116),(float)ClientSize.Height/baseClientSize.Height)));
             next=(float)Math.Round(next*20f)/20f;
-            if(Math.Abs(next-uiScale)<.01f){LayoutHeader();LayoutSidebarFooter();LayoutWorkspace();return;}
+            if(Math.Abs(next-uiScale)<.01f){LayoutHeader();LayoutSidebarFooter();LayoutWorkspace();root.Invalidate(true);return;}
             uiScale=next;
             sidebar.Width=Ui(220);header.Height=Ui(68);
             ScaleUiTree(sidebar);ScaleUiTree(header);ScaleUiTree(content);
-            LayoutHeader();LayoutSidebarFooter();LayoutWorkspace();
+            LayoutHeader();LayoutSidebarFooter();LayoutWorkspace();root.Invalidate(true);
         }
         private void AddShadow(Control parent,int left,int top,int width,int height) {
             CardShadow shadow=new CardShadow { Width=width+5,Height=height+6,Anchor=AnchorStyles.Top|AnchorStyles.Left };
