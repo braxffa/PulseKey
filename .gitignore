@@ -1,4 +1,5 @@
 dist/
+work/
 *.pdb
 *.user
 *.suo

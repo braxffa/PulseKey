@@ -20,39 +20,11 @@ The script writes `dist\PulseKey.exe`. It locates the 64-bit .NET Framework comp
 
 The assembly version is `1.0.2.0`; the package/release tag is `v1.0.2`. The executable is not code signed. Build on a trusted Windows machine and compare release checksums with the attached `SHA256SUMS-v1.0.2.txt` if you download a prebuilt package.
 
-## Signing a release
+## Free Microsoft Store package signing
 
-The published v1.0.2 downloads are unsigned. To produce a future signed release, use a validated **Public Trust** certificate profile in [Azure Artifact Signing](https://learn.microsoft.com/en-us/azure/artifact-signing/quickstart), or an independently issued code-signing certificate. Artifact Signing requires an eligible paid Azure subscription, completed identity validation, and the Certificate Profile Signer role. Its [Basic plan](https://azure.microsoft.com/en-us/products/artifact-signing) has a monthly charge. Do not publish an executable as signed until verification succeeds.
+The published v1.0.2 GitHub EXE and ZIP are unsigned. The free route is a **Microsoft Store MSIX**: after the app passes Store certification, Microsoft signs the Store-distributed package. This does not sign the standalone EXE or a copy of the MSIX downloaded from GitHub. See [Store release workflow](STORE.md) for the exact steps and current status.
 
-Install [Microsoft's Artifact Signing Client Tools](https://learn.microsoft.com/en-us/azure/artifact-signing/how-to-signing-integrations) on the Windows signing machine:
-
-```powershell
-winget install -e --id Microsoft.Azure.ArtifactSigningClientTools
-```
-
-After building, run the included script with values from the Azure account and certificate profile:
-
-```powershell
-.\scripts\sign-artifact.ps1 `
-  -Endpoint 'https://<region>.codesigning.azure.net' `
-  -AccountName '<account-name>' `
-  -CertificateProfileName '<profile-name>' `
-  -InputPath '.\dist\PulseKey.exe' `
-  -OutputPath '.\dist\PulseKey-signed.exe'
-```
-
-The script signs a **copy** with SHA-256 and a Microsoft timestamp, then requires successful SignTool and Windows Authenticode verification. A failed output is removed. Check the printed publisher name and SHA-256 hash before packaging. The account endpoint and profile name are configuration values; do not put Azure credentials or private signing keys in the repository. Recompute release checksums after signing because a signature changes the executable bytes.
-
-For a local, non-admin setup, extract the official `Microsoft.ArtifactSigning.Client` NuGet package and .NET 8 runtime into a private working directory. Pass the x64 library path with `-DlibPath` and the runtime directory with `-DotNetRoot`; neither dependency needs to be committed to this repository.
-
-After signing, use `scripts/package-signed-release.ps1` to create the standalone EXE, portable ZIP, and SHA-256 manifest. It rejects unsigned or un-timestamped builds and requires the executable's file version to match the requested release version. Update the assembly version in `src/PulseKey.cs` before building a new version.
-
-```powershell
-.\scripts\package-signed-release.ps1 `
-  -Version '<next-version>' `
-  -SignedExePath '.\dist\PulseKey-signed.exe' `
-  -OutputDirectory '.\release-output'
-```
+The repository contains `scripts/package-store-msix.ps1` for preparing the unsigned submission package. It takes the exact package name and publisher identity from Partner Center and validates the generated MSIX. It does not require Azure or the Artifact Signing Client Tools.
 
 ## Manual smoke test
 
