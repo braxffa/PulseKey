@@ -2,6 +2,7 @@
 
 ## v1.0.4 — 2026-10-11
 
+- Published [PulseKey v1.0.4 on the Microsoft Store](https://apps.microsoft.com/detail/9NTRWC5CM8C5).
 - Updated the Repeat actions-per-second estimate as the interval is typed and applied a committed interval to an armed Repeat action.
 - Made selected page, input, behavior, theme, and dropdown choices stand out across all 15 themes.
 

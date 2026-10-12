@@ -10,9 +10,11 @@ PulseKey is a portable 64-bit Windows app built with Windows Forms and the .NET 
 
 ## Download
 
-Get `PulseKey-v1.0.4-win-x64.zip` from [Releases](../../releases). Extract it to a folder, then run `PulseKey.exe`. A standalone executable and `SHA256SUMS-v1.0.4.txt` are also attached to the release.
+Get [PulseKey v1.0.4 from the Microsoft Store](https://apps.microsoft.com/detail/9NTRWC5CM8C5) for the Store-distributed version. [Microsoft signs MSIX packages](https://learn.microsoft.com/en-us/windows/apps/publish/publish-your-app/msix/app-certification-process) it distributes through the Store.
 
-> Windows may display a SmartScreen prompt for an unsigned app. Review the source and the release checksum before choosing whether to run it. The release is not code signed.
+For a portable copy, get `PulseKey-v1.0.4-win-x64.zip` from [Releases](../../releases). Extract it to a folder, then run `PulseKey.exe`. A standalone executable and `SHA256SUMS-v1.0.4.txt` are also attached to the release.
+
+> Windows may display a SmartScreen prompt for the unsigned GitHub portable download. Review the source and the release checksum before choosing whether to run it. The GitHub release is not code signed.
 
 ## At a glance
 
